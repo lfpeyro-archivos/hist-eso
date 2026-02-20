@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test: L'espai humà. La població (3r ESO)</title>
+  <style>
+    :root {
+      --primary: #1f6f8b;       /* Blau geografia */
+      --accent: #f39c12;        /* Taronja */
+      --bg: #f7f8fa;
+      --correct: #27ae60;
+      --incorrect: #e74c3c;
+      --info: #3498db;          /* Blau per contestada */
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background-color: var(--bg);
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      margin: 0;
+    }
+    .quiz-container {
+      background: white;
+      width: 100%;
+      max-width: 760px;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      border-top: 8px solid var(--primary);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    .q-circle {
+      background: var(--primary);
+      color: white;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-weight: bold;
+      flex: 0 0 auto;
+    }
+    #progress-text { color: #2c3e50; font-weight: 600; }
+    h2 {
+      font-size: 1.25rem;
+      min-height: 64px;
+      color: var(--primary);
+      line-height: 1.4;
+      margin: 0 0 10px 0;
+    }
+    .options {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .opt-btn {
+      padding: 16px;
+      border: 2px solid #eee;
+      border-radius: 10px;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      font-size: 1rem;
+      transition: 0.2s;
+      width: 100%;
+    }
+    .opt-btn:hover { border-color: var(--accent); background: #fff8ec; }
+    .opt-btn.selected { border-color: var(--primary); background: #eef7fb; }
+    .opt-btn.correct { background: var(--correct) !important; color: white; border-color: var(--correct); }
+    .opt-btn.wrong { background: var(--incorrect) !important; color: white; border-color: var(--incorrect); }
+
+    .feedback {
+      margin-top: 10px;
+      font-weight: bold;
+      text-align: center;
+      height: 26px;
+      font-size: 1.05rem;
+    }
+
+    .nav-controls {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    button.action {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.25s;
+      font-size: 0.95rem;
+    }
+    .btn-nav { background: #ecf0f1; color: #7f8c8d; }
+    .btn-nav:hover { background: #bdc3c7; color: white; }
+    .btn-check { background: var(--accent); color: white; }
+    .btn-check:hover { filter: brightness(0.98); }
+    .btn-finish { background: var(--primary); color: white; }
+    .btn-finish:hover { filter: brightness(0.98); }
+
+    .grid-nav {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 6px;
+      margin-top: 26px;
+      padding-top: 18px;
+      border-top: 1px solid #eee;
+    }
+    .grid-item {
+      font-size: 0.78rem;
+      padding: 9px 0;
+      border: 1px solid #ddd;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: 0.2s;
+      user-select: none;
+    }
+    .grid-item.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* ESTATS */
+    .grid-item.completed { border: 2px solid var(--info); }
+    .grid-item.correct { border: 2px solid var(--correct); background: #eafff0; }
+    .grid-item.wrong { border: 2px solid var(--incorrect); background: #fff0f0; }
+
+    #result-screen { display: none; text-align: center; padding: 40px 10px; }
+    #result-title { margin: 0 0 10px 0; color: var(--primary); }
+    .small-note { color: #7f8c8d; font-size: 0.95rem; margin-top: 8px; }
+  </style>
+</head>
+
+<body>
+  <div class="quiz-container">
+    <div id="quiz-ui">
+      <div class="header">
+        <span id="progress-text">Pregunta 1 de 35</span>
+        <div class="q-circle" id="q-number">1</div>
+      </div>
+
+      <h2 id="q-text">Carregant pregunta...</h2>
+      <div class="options" id="opt-container"></div>
+      <div class="feedback" id="feedback"></div>
+
+      <div class="nav-controls">
+        <button class="action btn-nav" onclick="changeQ(-1)">← Anterior</button>
+        <button class="action btn-check" id="check-btn" onclick="checkAnswer()">Comprovar ✅</button>
+        <button class="action btn-nav" onclick="changeQ(1)">Següent →</button>
+      </div>
+
+      <div class="grid-nav" id="grid-nav"></div>
+
+      <button class="action btn-finish" style="width: 100%; margin-top: 22px;" onclick="showFinalResult()">
+        Finalitzar i veure nota 🏆
+      </button>
+      <div class="small-note">Consell: pots saltar a qualsevol pregunta clicant el número.</div>
+    </div>
+
+    <div id="result-screen">
+      <h1 id="result-title">Resultat final</h1>
+      <div style="font-size: 4.2rem; font-weight: bold; margin: 18px 0; color: var(--primary);" id="final-score">0/35</div>
+      <p id="final-msg" style="font-size: 1.15rem; margin-bottom: 26px;"></p>
+      <button class="action btn-finish" onclick="resetQuiz()">Tornar a començar</button>
+    </div>
+  </div>
+
+<script>
+const quizData = [
+  { q: "Què és la població?", opts: ["El conjunt d’habitants d’un territori", "La taxa de natalitat d’un país", "El nombre d’immigrants"], a: 0 },
+  { q: "Quina és la font més completa de dades demogràfiques?", opts: ["Eurostat", "Divisió de Població de l’ONU", "Banc Mundial"], a: 1 },
+  { q: "En 2021 la població mundial era aproximadament:", opts: ["6.500 milions", "9.000 milions", "7.837 milions"], a: 2 },
+  { q: "La densitat de població relaciona:", opts: ["Habitants i extensió del territori", "Natalitat i mortalitat", "Migració i creixement natural"], a: 0 },
+  { q: "Un dels principals focus de concentració mundial és:", opts: ["Sàhara", "Sud i sud-est d’Àsia", "Himàlaia"], a: 1 },
+  { q: "Un focus de despoblament són:", opts: ["Europa occidental", "Costa est dels EUA", "Grans selves equatorials"], a: 2 },
+  { q: "Entre els factors físics que influeixen en la distribució destaca:", opts: ["Proximitat al mar", "Decisions polítiques", "Guerres"], a: 0 },
+  { q: "L’antiguitat del poblament explica altes densitats en:", opts: ["Àfrica central", "Àsia i Europa", "Austràlia"], a: 1 },
+  { q: "La densitat mitjana d’Espanya és:", opts: ["93,7 hab/km²", "217 hab/km²", "150 hab/km²"], a: 0 },
+  { q: "El moviment natural és:", opts: ["La suma d’immigració i emigració", "La diferència entre natalitat i mortalitat", "El creixement real"], a: 1 },
+  { q: "La immigració suposa:", opts: ["Arribada de població", "Eixida de població", "Pèrdua natural"], a: 0 },
+  { q: "Les taxes demogràfiques s’expressen normalment en:", opts: ["Percentatge", "Euros", "Tants per mil (‰)"], a: 2 },
+  { q: "La natalitat és:", opts: ["Nombre de defuncions", "Nombre de naixements en un any", "Saldo migratori"], a: 1 },
+  { q: "En 2020 la natalitat mundial era:", opts: ["18 ‰", "8 ‰", "25 ‰"], a: 0 },
+  { q: "L’esperança de vida és un indicador de:", opts: ["Natalitat", "Mortalitat", "Migració"], a: 1 },
+  { q: "Europa presenta actualment:", opts: ["Creixement dèbil o negatiu", "Creixement elevat", "Explosió demogràfica"], a: 0 },
+  { q: "El creixement natural positiu ocorre quan:", opts: ["Defuncions > naixements", "Naixements > defuncions", "Migració negativa"], a: 1 },
+  { q: "En el règim demogràfic antic la mortalitat era:", opts: ["Molt baixa", "Moderada", "Molt alta"], a: 2 },
+  { q: "En la primera fase de la transició demogràfica:", opts: ["Baixa la mortalitat ràpidament", "Baixa la natalitat ràpidament", "Pugen ambdues"], a: 0 },
+  { q: "El règim demogràfic modern es caracteritza per:", opts: ["Alta natalitat", "Molt baixa natalitat i mortalitat", "Alta mortalitat"], a: 1 },
+  { q: "La Comunitat Valenciana té:", opts: ["Creixement natural positiu", "Població jove predominant", "Creixement natural negatiu"], a: 2 },
+  { q: "En 2022 hi havia:", opts: ["101,6 hòmens per cada 100 dones", "100 dones per cada 101,6 hòmens", "95 hòmens per cada 100 dones"], a: 0 },
+  { q: "Predomina població envellida en:", opts: ["Àfrica subsahariana", "Països rics", "Països menys desenrotllats"], a: 1 },
+  { q: "Una piràmide de població mostra:", opts: ["El comerç exterior", "El PIB", "L’estructura per sexe i edat"], a: 2 },
+  { q: "El saldo migratori és:", opts: ["Diferència entre immigració i emigració", "Diferència entre natalitat i mortalitat", "Total d’immigrants"], a: 0 },
+  { q: "L’èxode rural és:", opts: ["Migració internacional", "Migració del camp a la ciutat", "Migració Nord-Sud"], a: 1 },
+  { q: "En el passat Europa va ser:", opts: ["Receptora", "Emigratòria", "Tancada"], a: 1 },
+  { q: "En 2020 hi havia aproximadament:", opts: ["150 milions de migrants", "500 milions de migrants", "280 milions de migrants"], a: 2 },
+  { q: "Les migracions Sud-Nord són:", opts: ["De països rics a pobres", "De països menys desenrotllats a desenrotllats", "Entre països rics"], a: 1 },
+  { q: "Les remeses són:", opts: ["Impostos dels immigrants", "Multes per emigrar", "Diners enviats pels emigrants a les seues famílies"], a: 2 },
+  { q: "Un avantatge per al país de destí és:", opts: ["Rejoveniment de la població", "Pèrdua de població jove", "Envelliment immediat"], a: 0 },
+  { q: "La xenofòbia és:", opts: ["Integració cultural", "Rebuig a l’estranger", "Multiculturalitat"], a: 1 },
+  { q: "Segons l’ONU, en 2100 la població mundial serà aproximadament:", opts: ["9.600 milions", "8.000 milions", "10.900 milions"], a: 2 },
+  { q: "En 2050 el 72% de la humanitat viurà en:", opts: ["Zones rurals", "Ciutats", "Muntanyes"], a: 1 },
+  { q: "L’envelliment global es deu a:", opts: ["Major natalitat", "Menor natalitat i major longevitat", "Augment de guerres"], a: 1 }
+];
+
+let currentIdx = 0;
+let userAnswers = new Array(quizData.length).fill(null);
+let checkedStatus = new Array(quizData.length).fill(false);
+
+function initGrid() {
+  const nav = document.getElementById('grid-nav');
+  nav.innerHTML = '';
+  quizData.forEach((_, i) => {
+    const item = document.createElement('div');
+    item.className = 'grid-item';
+    item.id = `grid-${i}`;
+    item.innerText = i + 1;
+    item.onclick = () => { currentIdx = i; render(); };
+    nav.appendChild(item);
+  });
+}
+
+function render() {
+  const data = quizData[currentIdx];
+  document.getElementById('q-number').innerText = currentIdx + 1;
+  document.getElementById('progress-text').innerText = `Pregunta ${currentIdx + 1} de ${quizData.length}`;
+  document.getElementById('q-text').innerText = data.q;
+  document.getElementById('feedback').innerText = '';
+
+  const container = document.getElementById('opt-container');
+  container.innerHTML = '';
+
+  data.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    if (userAnswers[currentIdx] === i) btn.classList.add('selected');
+
+    if (checkedStatus[currentIdx]) {
+      if (i === data.a) btn.classList.add('correct');
+      else if (userAnswers[currentIdx] === i) btn.classList.add('wrong');
+    }
+
+    btn.innerText = opt;
+    btn.onclick = () => select(i);
+    container.appendChild(btn);
+  });
+
+  // Actualitzar visual dels números inferiors
+  quizData.forEach((_, i) => {
+    const gridItem = document.getElementById(`grid-${i}`);
+    gridItem.classList.remove('active', 'completed', 'correct', 'wrong');
+
+    if (i === currentIdx) gridItem.classList.add('active');
+
+    if (checkedStatus[i]) {
+      const isCorrect = userAnswers[i] === quizData[i].a;
+      gridItem.classList.add(isCorrect ? 'correct' : 'wrong');
+    } else if (userAnswers[i] !== null) {
+      gridItem.classList.add('completed');
+    }
+  });
+}
+
+function select(idx) {
+  if (checkedStatus[currentIdx]) return;
+  userAnswers[currentIdx] = idx;
+  render();
+}
+
+function checkAnswer() {
+  if (userAnswers[currentIdx] === null) {
+    const fb = document.getElementById('feedback');
+    fb.style.color = 'orange';
+    fb.innerText = '⚠️ Tria una opció primer';
+    return;
+  }
+  checkedStatus[currentIdx] = true;
+  const isCorrect = userAnswers[currentIdx] === quizData[currentIdx].a;
+  const fb = document.getElementById('feedback');
+  fb.style.color = isCorrect ? 'var(--correct)' : 'var(--incorrect)';
+  fb.innerText = isCorrect ? '✨ Molt bé! Resposta correcta' : '❌ Resposta incorrecta';
+  render();
+}
+
+function changeQ(dir) {
+  currentIdx += dir;
+  if (currentIdx < 0) currentIdx = 0;
+  if (currentIdx >= quizData.length) currentIdx = quizData.length - 1;
+  render();
+}
+
+function showFinalResult() {
+  let finalScore = 0;
+  userAnswers.forEach((ans, i) => {
+    if (ans === quizData[i].a) finalScore++;
+  });
+
+  document.getElementById('quiz-ui').style.display = 'none';
+  document.getElementById('result-screen').style.display = 'block';
+  document.getElementById('final-score').innerText = `${finalScore} / ${quizData.length}`;
+
+  const msg = document.getElementById('final-msg');
+  const pct = finalScore / quizData.length;
+
+  if (pct >= 0.85) msg.innerText = "🌍 Excel·lent! Domines molt bé la població i les migracions.";
+  else if (pct >= 0.60) msg.innerText = "✅ Bon treball! Vas pel bon camí, repassa un poc els conceptes clau.";
+  else msg.innerText = "📚 Cal repassar: torna a mirar definicions, taxes i transicions demogràfiques.";
+}
+
+function resetQuiz() {
+  currentIdx = 0;
+  userAnswers = new Array(quizData.length).fill(null);
+  checkedStatus = new Array(quizData.length).fill(false);
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('quiz-ui').style.display = 'block';
+  initGrid();
+  render();
+}
+
+initGrid();
+render();
+</script>
+</body>
+</html>

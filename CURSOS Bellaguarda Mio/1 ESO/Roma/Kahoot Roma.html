@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test: Roma (Monarquia, República i Imperi) — 3r ESO</title>
+  <style>
+    :root {
+      --primary: #7b241c;   /* Roig romà */
+      --accent: #d4af37;    /* Or */
+      --bg: #f9f7f2;
+      --correct: #27ae60;
+      --incorrect: #e74c3c;
+      --info: #3498db;      /* Blau per contestada */
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background-color: var(--bg);
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      margin: 0;
+    }
+    .quiz-container {
+      background: white;
+      width: 100%;
+      max-width: 760px;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      border-top: 8px solid var(--primary);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    .q-circle {
+      background: var(--primary);
+      color: white;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-weight: bold;
+      flex: 0 0 auto;
+    }
+    #progress-text { color: #2c3e50; font-weight: 600; }
+    h2 {
+      font-size: 1.25rem;
+      min-height: 64px;
+      color: var(--primary);
+      line-height: 1.4;
+      margin: 0 0 10px 0;
+    }
+    .options { display: grid; gap: 12px; margin-bottom: 10px; }
+    .opt-btn {
+      padding: 16px;
+      border: 2px solid #eee;
+      border-radius: 10px;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      font-size: 1rem;
+      transition: 0.2s;
+      width: 100%;
+    }
+    .opt-btn:hover { border-color: var(--accent); background: #fdfaf0; }
+    .opt-btn.selected { border-color: var(--primary); background: #f8efee; }
+    .opt-btn.correct { background: var(--correct) !important; color: white; border-color: var(--correct); }
+    .opt-btn.wrong { background: var(--incorrect) !important; color: white; border-color: var(--incorrect); }
+
+    .feedback {
+      margin-top: 10px;
+      font-weight: bold;
+      text-align: center;
+      height: 26px;
+      font-size: 1.05rem;
+    }
+
+    .nav-controls {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    button.action {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.25s;
+      font-size: 0.95rem;
+    }
+    .btn-nav { background: #ecf0f1; color: #7f8c8d; }
+    .btn-nav:hover { background: #bdc3c7; color: white; }
+    .btn-check { background: var(--accent); color: white; }
+    .btn-finish { background: var(--primary); color: white; }
+
+    .grid-nav {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 6px;
+      margin-top: 26px;
+      padding-top: 18px;
+      border-top: 1px solid #eee;
+    }
+    .grid-item {
+      font-size: 0.78rem;
+      padding: 9px 0;
+      border: 1px solid #ddd;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: 0.2s;
+      user-select: none;
+    }
+    .grid-item.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .grid-item.completed { border: 2px solid var(--info); }
+    .grid-item.correct { border: 2px solid var(--correct); background: #eafff0; }
+    .grid-item.wrong { border: 2px solid var(--incorrect); background: #fff0f0; }
+
+    #result-screen { display: none; text-align: center; padding: 40px 10px; }
+    #result-title { margin: 0 0 10px 0; color: var(--primary); }
+    .small-note { color: #7f8c8d; font-size: 0.95rem; margin-top: 8px; }
+  </style>
+</head>
+
+<body>
+  <div class="quiz-container">
+    <div id="quiz-ui">
+      <div class="header">
+        <span id="progress-text">Pregunta 1 de 40</span>
+        <div class="q-circle" id="q-number">1</div>
+      </div>
+
+      <h2 id="q-text">Carregant pregunta...</h2>
+      <div class="options" id="opt-container"></div>
+      <div class="feedback" id="feedback"></div>
+
+      <div class="nav-controls">
+        <button class="action btn-nav" onclick="changeQ(-1)">← Anterior</button>
+        <button class="action btn-check" id="check-btn" onclick="checkAnswer()">Comprovar ✅</button>
+        <button class="action btn-nav" onclick="changeQ(1)">Següent →</button>
+      </div>
+
+      <div class="grid-nav" id="grid-nav"></div>
+
+      <button class="action btn-finish" style="width: 100%; margin-top: 22px;" onclick="showFinalResult()">
+        Finalitzar i veure nota 🏆
+      </button>
+      <div class="small-note">Consell: pots saltar a qualsevol pregunta clicant el número.</div>
+    </div>
+
+    <div id="result-screen">
+      <h1 id="result-title">Resultat final</h1>
+      <div style="font-size: 4.2rem; font-weight: bold; margin: 18px 0; color: var(--primary);" id="final-score">0/40</div>
+      <p id="final-msg" style="font-size: 1.15rem; margin-bottom: 26px;"></p>
+      <button class="action btn-finish" onclick="resetQuiz()">Tornar a començar</button>
+    </div>
+  </div>
+
+<script>
+const quizData = [
+  { q: "Entre quines serralades es troba la península Itàlica?", opts: ["Entre els Pirineus i els Alps", "Entre els Alps i els Apenins", "Entre els Alps i els Carpats"], a: 1 },
+  { q: "Quins pobles habitaven el nord de la península Itàlica al segle VIII a.C.?", opts: ["Etruscs i llatins", "Celtes i lígurs", "Grecs i macedonis"], a: 1 },
+  { q: "On se situaven els etruscs i els llatins?", opts: ["Al centre", "Al sud", "Al nord"], a: 0 },
+  { q: "Qui habitava el sud de la península Itàlica?", opts: ["Celtes", "Etruscs", "Grecs (Magna Grècia)"], a: 2 },
+  { q: "En quin any es va fundar Roma?", opts: ["753 a.C.", "509 a.C.", "27 a.C."], a: 0 },
+  { q: "On es van establir les tribus llatines?", opts: ["Junt al Rin", "Junt a les set colines i la desembocadura del riu Tíber", "Als Alps"], a: 1 },
+  { q: "Un avantatge de la ubicació de Roma va ser:", opts: ["Defensa fàcil i control de rutes comercials", "Accés directe a l’oceà Atlàntic", "Clima tropical"], a: 0 },
+  { q: "Quina etapa va començar en el 509 a.C.?", opts: ["Imperi", "Monarquia", "República"], a: 2 },
+  { q: "Qui tenia el poder absolut en la Monarquia?", opts: ["El Senat", "El rei", "Els magistrats"], a: 1 },
+  { q: "Quin grup tenia drets polítics en la Monarquia?", opts: ["Plebeus", "Patricis", "Esclaus"], a: 1 },
+  { q: "Qui pagava impostos i servia en l’exèrcit sense drets polítics?", opts: ["Plebeus", "Patricis", "Senadors"], a: 0 },
+  { q: "Com va acabar la Monarquia?", opts: ["Per invasió germànica", "Per mort natural del rei", "Per una revolta popular en 509 a.C."], a: 2 },
+  { q: "En la República, el poder es repartia en:", opts: ["Dos institucions", "Tres institucions", "Quatre institucions"], a: 1 },
+  { q: "Quina institució aprovava lleis i elegia magistrats?", opts: ["Comicis", "Senat", "Exèrcit"], a: 0 },
+  { q: "Quant de temps governaven els magistrats?", opts: ["Cinc anys", "Deu anys", "Un any"], a: 2 },
+  { q: "Qui dirigia l’exèrcit i presidia el Senat?", opts: ["Senadors", "Tribuns", "Cònsols"], a: 2 },
+  { q: "Quants antics magistrats componien el Senat?", opts: ["100", "200", "300"], a: 2 },
+  { q: "Quin assoliment va ser la primera recopilació de lleis per escrit?", opts: ["Llei de les Dotze Taules", "Edicte de Milà", "Pax Romana"], a: 0 },
+  { q: "En quin any es van crear els tribuns de la plebs?", opts: ["451 a.C.", "494 a.C.", "367 a.C."], a: 1 },
+  { q: "A qui va derrotar Roma en les Guerres Púniques?", opts: ["Macedònia", "Grècia", "Cartago"], a: 2 },
+  { q: "Una conseqüència econòmica de les conquestes va ser:", opts: ["Arribada de riqueses, terres i esclaus", "Fi del comerç", "Desaparició de l’exèrcit"], a: 0 },
+  { q: "Qui va instaurar l’Imperi en el 27 a.C.?", opts: ["Juli Cèsar", "Octavi August", "Trajà"], a: 1 },
+  { q: "Durant l’Imperi, l’emperador concentrava:", opts: ["Només el poder militar", "Només el poder religiós", "Poder polític, militar, legislatiu i religiós"], a: 2 },
+  { q: "La màxima extensió de l’Imperi es va assolir amb:", opts: ["Trajà", "Constantí", "Dioclecià"], a: 0 },
+  { q: "Què va ser la Pax Romana?", opts: ["Període de guerres civils", "Període de tranquil·litat i prosperitat", "Període d’invasions germàniques"], a: 1 },
+  { q: "Quina llengua era comuna en tot l’Imperi?", opts: ["Grec", "Llatí", "Arameu"], a: 1 },
+  { q: "Una causa exterior de la crisi del segle III va ser:", opts: ["Atacs dels pobles germànics", "Erupcions volcàniques", "Epidèmies tropicals"], a: 0 },
+  { q: "En 395 d.C., qui va dividir l’Imperi?", opts: ["Constantí", "Teodosi I", "Ròmul Augústul"], a: 1 },
+  { q: "La base de l’economia romana era:", opts: ["Ramaderia nòmada", "Comerç marítim", "Tríada mediterrània"], a: 2 },
+  { q: "Què eren els latifundis?", opts: ["Petites propietats familiars", "Grans extensions propietat de rics", "Terres de l’Estat sense cultivar"], a: 1 },
+  { q: "Quina moneda era comuna en el comerç romà?", opts: ["Dracma", "Denari", "Dinar"], a: 1 },
+  { q: "El fòrum era:", opts: ["Un temple", "Un mercat agrícola", "Plaça pública en el creuament del Cardo i el Decumanus"], a: 2 },
+  { q: "Qui no tenia drets?", opts: ["Ciutadans", "Senadors", "No ciutadans"], a: 2 },
+  { q: "Quin culte era obligatori per mantindre la unitat de l’Imperi?", opts: ["Culte a l’Emperador", "Cristianisme", "Paganisme germànic"], a: 0 },
+  { q: "En quin any el cristianisme es va convertir en religió oficial?", opts: ["313 d.C.", "380 d.C.", "476 d.C."], a: 1 },
+  { q: "El ciment romà permetia:", opts: ["Decoracions daurades", "Murs molt resistents", "Teulades de fusta"], a: 1 },
+  { q: "Quin edifici destacava per la seua gran cúpula?", opts: ["Coliseu", "Basílica", "Panteó de Roma"], a: 2 },
+  { q: "Durant la República, el retrat escultòric es caracteritzava per:", opts: ["Idealització total", "Màxim realisme", "Abstracció"], a: 1 },
+  { q: "Quines ciutats conserven pintures gràcies a la cendra d’un volcà?", opts: ["Atenes i Esparta", "Roma i Milà", "Pompeia i Herculà"], a: 2 },
+  { q: "Els pobles germànics procedien de:", opts: ["Àfrica", "Dinamarca i Escandinàvia", "Àsia"], a: 1 }
+];
+
+let currentIdx = 0;
+let userAnswers = new Array(quizData.length).fill(null);
+let checkedStatus = new Array(quizData.length).fill(false);
+
+function initGrid() {
+  const nav = document.getElementById('grid-nav');
+  nav.innerHTML = '';
+  quizData.forEach((_, i) => {
+    const item = document.createElement('div');
+    item.className = 'grid-item';
+    item.id = `grid-${i}`;
+    item.innerText = i + 1;
+    item.onclick = () => { currentIdx = i; render(); };
+    nav.appendChild(item);
+  });
+}
+
+function render() {
+  const data = quizData[currentIdx];
+  document.getElementById('q-number').innerText = currentIdx + 1;
+  document.getElementById('progress-text').innerText = `Pregunta ${currentIdx + 1} de ${quizData.length}`;
+  document.getElementById('q-text').innerText = data.q;
+  document.getElementById('feedback').innerText = '';
+
+  const container = document.getElementById('opt-container');
+  container.innerHTML = '';
+
+  data.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    if (userAnswers[currentIdx] === i) btn.classList.add('selected');
+
+    if (checkedStatus[currentIdx]) {
+      if (i === data.a) btn.classList.add('correct');
+      else if (userAnswers[currentIdx] === i) btn.classList.add('wrong');
+    }
+
+    btn.innerText = opt;
+    btn.onclick = () => select(i);
+    container.appendChild(btn);
+  });
+
+  quizData.forEach((_, i) => {
+    const gridItem = document.getElementById(`grid-${i}`);
+    gridItem.classList.remove('active', 'completed', 'correct', 'wrong');
+
+    if (i === currentIdx) gridItem.classList.add('active');
+
+    if (checkedStatus[i]) {
+      const isCorrect = userAnswers[i] === quizData[i].a;
+      gridItem.classList.add(isCorrect ? 'correct' : 'wrong');
+    } else if (userAnswers[i] !== null) {
+      gridItem.classList.add('completed');
+    }
+  });
+}
+
+function select(idx) {
+  if (checkedStatus[currentIdx]) return;
+  userAnswers[currentIdx] = idx;
+  render();
+}
+
+function checkAnswer() {
+  if (userAnswers[currentIdx] === null) {
+    const fb = document.getElementById('feedback');
+    fb.style.color = 'orange';
+    fb.innerText = '⚠️ Tria una opció primer';
+    return;
+  }
+  checkedStatus[currentIdx] = true;
+  const isCorrect = userAnswers[currentIdx] === quizData[currentIdx].a;
+  const fb = document.getElementById('feedback');
+  fb.style.color = isCorrect ? 'var(--correct)' : 'var(--incorrect)';
+  fb.innerText = isCorrect ? '✨ Molt bé! Resposta correcta' : '❌ Resposta incorrecta';
+  render();
+}
+
+function changeQ(dir) {
+  currentIdx += dir;
+  if (currentIdx < 0) currentIdx = 0;
+  if (currentIdx >= quizData.length) currentIdx = quizData.length - 1;
+  render();
+}
+
+function showFinalResult() {
+  let finalScore = 0;
+  userAnswers.forEach((ans, i) => {
+    if (ans === quizData[i].a) finalScore++;
+  });
+
+  document.getElementById('quiz-ui').style.display = 'none';
+  document.getElementById('result-screen').style.display = 'block';
+  document.getElementById('final-score').innerText = `${finalScore} / ${quizData.length}`;
+
+  const msg = document.getElementById('final-msg');
+  const pct = finalScore / quizData.length;
+
+  if (pct >= 0.85) msg.innerText = "🏛️ Excel·lent! Domines molt bé la història de Roma.";
+  else if (pct >= 0.60) msg.innerText = "✅ Bon treball! Repassa un poc institucions i dates clau.";
+  else msg.innerText = "📚 Cal repassar: monarquia, república, imperi i societat romana.";
+}
+
+function resetQuiz() {
+  currentIdx = 0;
+  userAnswers = new Array(quizData.length).fill(null);
+  checkedStatus = new Array(quizData.length).fill(false);
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('quiz-ui').style.display = 'block';
+  initGrid();
+  render();
+}
+
+initGrid();
+render();
+</script>
+</body>
+</html>
