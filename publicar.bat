@@ -1,99 +1,63 @@
 @echo off
 setlocal EnableExtensions
 
+REM Ir a la carpeta donde está este .bat (portable)
 cd /d "%~dp0"
-echo.
-echo ===== Repo: %cd% =====
 
-if not exist ".git" (
-  echo [ERROR] Este .bat debe estar en la raiz del repo (no veo .git).
-  pause
-  exit /b 1
-)
+REM Guardamos la ruta sin comillas finales
+set "REPO=%CD%"
 
-set "DIDSTASH=0"
+REM 0) Si no hay cambios locales, sincronizar antes (multi-PC)
+set "DIRTY="
+for /f "delims=" %%A in ('git status --porcelain') do set "DIRTY=1"
 
-REM 1) Detectar cambios (tracked/unstaged, staged, untracked)
-echo.
-echo ===== 1) Comprobando cambios locales =====
-
-git diff --quiet
-if errorlevel 1 goto DO_STASH
-git diff --cached --quiet
-if errorlevel 1 goto DO_STASH
-
-for /f "delims=" %%A in ('git ls-files --others --exclude-standard') do goto DO_STASH
-
-goto DO_PULL
-
-:DO_STASH
-echo.
-echo ===== Guardando cambios (stash -u) =====
-git stash push -u -m "auto-stash"
-if errorlevel 1 (
-  echo [ERROR] No se pudo hacer stash.
-  pause
-  exit /b 1
-)
-set "DIDSTASH=1"
-
-:DO_PULL
-echo.
-echo ===== 2) Sincronizando (git pull --rebase) =====
-git pull --rebase
-if errorlevel 1 (
+if not defined DIRTY (
   echo.
-  echo [ERROR] Fallo en git pull --rebase.
-  echo Abre GitHub Desktop para resolver si hay conflictos.
-  pause
-  exit /b 1
-)
+  echo ===== Sin cambios locales: haciendo git pull --rebase =====
+  git pull --rebase
 
-REM 3) Si se hizo stash, lo recuperamos
-if "%DIDSTASH%"=="1" (
-  echo.
-  echo ===== 3) Recuperando cambios (stash pop) =====
-  git stash pop
   if errorlevel 1 (
     echo.
-    echo [ERROR] Conflicto al aplicar stash.
-    echo Abre GitHub Desktop, resuelve conflictos y vuelve a ejecutar el .bat.
+    echo [ERROR] Fallo en git pull --rebase
+    echo (Si hay conflicto, resuelvelo en GitHub Desktop y vuelve a ejecutar.)
     pause
     exit /b 1
   )
+) else (
+  echo.
+  echo ===== Hay cambios locales: salto el pull =====
 )
 
-REM 4) Generar index
-echo.
-echo ===== 4) Generando index.html =====
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%cd%\generate_index.ps1"
+REM 1) Generar/actualizar index.html
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO%\generate_index.ps1"
+
 if errorlevel 1 (
-  echo [ERROR] Fallo al ejecutar generate_index.ps1
+  echo.
+  echo [ERROR] Fallo al generar index.html
   pause
   exit /b 1
 )
 
-REM 5) Si no hay cambios, salir
-echo.
-echo ===== 5) Comprobando cambios tras generar index =====
-for /f "delims=" %%A in ('git status --porcelain') do goto DO_COMMIT
+REM 2) Ver si hay cambios antes de commitear
+set "HASCHANGES="
+for /f "delims=" %%A in ('git status --porcelain') do set "HASCHANGES=1"
 
-echo.
-echo ===== No hay cambios. Nada que publicar. =====
-pause
-exit /b 0
+if not defined HASCHANGES (
+  echo.
+  echo ===== No hay cambios. Nada que publicar. =====
+  pause
+  exit /b 0
+)
 
-:DO_COMMIT
-echo.
-echo ===== 6) Publicando (add/commit/push) =====
-git add -A
-git commit -m "Actualizacion automatica"
+REM 3) Publicar cambios
+git add .
+git commit -m "Actualizacion automatica %date% %time%"
 git push
 
 if errorlevel 1 (
   echo.
-  echo [ERROR] Fallo en git push (credenciales o cambios remotos).
-  echo Prueba a ejecutar otra vez el .bat.
+  echo [ERROR] Fallo en git push
+  echo (Si alguien publico justo antes, vuelve a ejecutar.)
   pause
   exit /b 1
 )
