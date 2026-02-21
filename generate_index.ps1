@@ -113,7 +113,7 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   foreach ($d in $dirs) {
     $safe = HtmlEncode $d.Name
     $href = "./$([System.Uri]::EscapeDataString($d.Name))/"
-    $dirItems += "<li class='item dir'><span class='badge b-folder'>FOLDER</span><span class='tri' aria-hidden='true'>▸</span> <a class='dirlink' href='$href'><strong>$safe</strong></a></li>"
+    $dirItems += "<li class='item dir'><span class='badge b-folder'>FOLDER</span><span class='tri' aria-hidden='true'>&gt;</span> <a class='dirlink' href='$href'><strong>$safe</strong></a></li>"
   }
 
   # -----------------------------
