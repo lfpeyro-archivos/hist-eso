@@ -32,8 +32,49 @@ function Build-Url([string]$relDir, [string]$fileName) {
   return "$BaseUrl/$escapedDir/$(Escape-Segment $fileName)"
 }
 
+function Build-Breadcrumb([string]$relDir) {
+
+  $crumbs = @()
+  $crumbs += "<a href='$BaseUrl/'>Inicio</a>"
+
+  if (-not [string]::IsNullOrWhiteSpace($relDir)) {
+    $parts = ($relDir -replace "\\","/").Split("/")
+    $pathAcc = ""
+
+    foreach ($p in $parts) {
+      if ([string]::IsNullOrWhiteSpace($pathAcc)) {
+        $pathAcc = $p
+      } else {
+        $pathAcc = "$pathAcc/$p"
+      }
+
+      $safe = HtmlEncode $p
+      $url  = "$BaseUrl/$([System.Uri]::EscapeDataString($pathAcc))/"
+      $crumbs += "<a href='$url'>$safe</a>"
+    }
+  }
+
+  return ($crumbs -join " &gt; ")
+}
+
 function Write-Index([string]$dirPath, [string]$relDir) {
+
   $title = if ($relDir) { ($relDir -replace "\\"," / ") } else { "Inicio" }
+
+  # Breadcrumb
+  $breadcrumbHtml = Build-Breadcrumb $relDir
+
+  # Link subir nivel
+  $upLink = ""
+  if (-not [string]::IsNullOrWhiteSpace($relDir)) {
+    $parent = Split-Path $relDir
+    if ([string]::IsNullOrWhiteSpace($parent)) {
+      $upLink = "<div><a href='$BaseUrl/'>Subir un nivel</a></div>"
+    } else {
+      $parentUrl = "$BaseUrl/$([System.Uri]::EscapeDataString(($parent -replace '\\','/')))/"
+      $upLink = "<div><a href='$parentUrl'>Subir un nivel</a></div>"
+    }
+  }
 
   # Subcarpetas
   $dirs = Get-ChildItem -LiteralPath $dirPath -Directory |
@@ -44,7 +85,7 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   foreach ($d in $dirs) {
     $safe = HtmlEncode $d.Name
     $href = "./$([System.Uri]::EscapeDataString($d.Name))/"
-    $dirItems += "<li>[DIR] <a href='$href'>$safe</a></li>"
+    $dirItems += "<li><strong>[DIR]</strong> <a href='$href'>$safe</a></li>"
   }
 
   # Archivos
@@ -88,15 +129,16 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   $htmlLines += "  <title>$title</title>"
   $htmlLines += "  <style>"
   $htmlLines += "    body{font-family:system-ui,Segoe UI,Arial;max-width:980px;margin:24px auto;padding:0 12px;}"
-  $htmlLines += "    h1{font-size:22px;margin-bottom:12px;}"
+  $htmlLines += "    h1{font-size:22px;margin-bottom:8px;}"
+  $htmlLines += "    .breadcrumb{font-size:14px;margin-bottom:12px;color:#555;}"
   $htmlLines += "    ul{line-height:1.7;padding-left:18px;}"
-  $htmlLines += "    .muted{color:#666;font-size:13px;margin-bottom:12px;}"
   $htmlLines += "    a{text-decoration:none;} a:hover{text-decoration:underline;}"
   $htmlLines += "  </style>"
   $htmlLines += "</head>"
   $htmlLines += "<body>"
+  $htmlLines += "  <div class='breadcrumb'>$breadcrumbHtml</div>"
+  $htmlLines += "  $upLink"
   $htmlLines += "  <h1>$title</h1>"
-  $htmlLines += "  <div class='muted'>Listado autogenerado</div>"
   $htmlLines += "  <ul>"
   $htmlLines += $contentLines
   $htmlLines += "  </ul>"
@@ -106,17 +148,13 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   $html = ($htmlLines -join "`n")
 
   $outFile = Join-Path $dirPath "index.html"
-  if (Test-Path -LiteralPath $outFile) {
-    $old = Get-Content -LiteralPath $outFile -Raw
-    if ($old -eq $html) { return }
-  }
-  # Forzar LF real y escribir sin que PowerShell meta CRLF
-  $htmlLf = $html -replace "`r`n", "`n"
-  [System.IO.File]::WriteAllText($outFile, $htmlLf, (New-Object System.Text.UTF8Encoding($false)))
+  [System.IO.File]::WriteAllText($outFile, $html, (New-Object System.Text.UTF8Encoding($false)))
 }
 
+# Generar index raíz
 Write-Index $RepoRoot ""
 
+# Generar subcarpetas
 Get-ChildItem -LiteralPath $RepoRoot -Directory -Recurse -Force |
   Where-Object { $SkipDirs -notcontains $_.Name } |
   ForEach-Object {
