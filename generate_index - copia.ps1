@@ -110,7 +110,6 @@ function Write-Index([string]$dirPath, [string]$relDir) {
     $old = Get-Content -LiteralPath $outFile -Raw
     if ($old -eq $html) { return }
   }
-  $html = $html -replace "`r`n", "`n"
   Set-Content -LiteralPath $outFile -Value $html -Encoding UTF8
 }
 
