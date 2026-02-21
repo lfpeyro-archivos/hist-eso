@@ -5,50 +5,25 @@ param(
 $AllowedExt = @(".pdf",".html",".docx",".pptx")
 $SkipDirs   = @(".git",".github","node_modules")
 
-# Base URL desde baseurl.txt (portable)
 $BaseUrlFile = Join-Path $RepoRoot "baseurl.txt"
 if (-not (Test-Path -LiteralPath $BaseUrlFile)) { throw "Falta baseurl.txt en la raíz del repo." }
 $BaseUrl = (Get-Content -LiteralPath $BaseUrlFile -Raw).Trim()
 if ([string]::IsNullOrWhiteSpace($BaseUrl)) { throw "baseurl.txt está vacío." }
 
-function Escape-Segment([string]$s) {
-  return [System.Uri]::EscapeDataString($s)
-}
-
-function HtmlEncode([string]$s) {
-  # Compatible sin System.Web
-  return [System.Net.WebUtility]::HtmlEncode($s)
-}
-
-function Get-RelPath([string]$root, [string]$full) {
-  # RelPath compatible (sin Path.GetRelativePath)
-  $root = $root.TrimEnd('\','/')
-  $full = $full.TrimEnd('\','/')
-
-  if ($full.Length -lt $root.Length) { return "" }
-
-  if ($full.Substring(0, $root.Length).ToLower() -ne $root.ToLower()) {
-    # Si por lo que sea no cuelga del root, devolvemos vacío
-    return ""
-  }
-
-  $rel = $full.Substring($root.Length).TrimStart('\','/')
-  return $rel
-}
+function Escape-Segment([string]$s) { return [System.Uri]::EscapeDataString($s) }
 
 function Build-Url([string]$relDir, [string]$fileName) {
   $relDir = ($relDir -replace "\\","/").Trim("/")
-  if ([string]::IsNullOrWhiteSpace($relDir)) {
+  if ([string]::IsNullOrWhiteSpace($relDir) -or $relDir -eq ".") {
     return "$BaseUrl/$(Escape-Segment $fileName)"
   }
-
   $segments = $relDir.Split("/") | ForEach-Object { Escape-Segment $_ }
   $escapedDir = ($segments -join "/")
   return "$BaseUrl/$escapedDir/$(Escape-Segment $fileName)"
 }
 
 function Write-Index([string]$dirPath, [string]$relDir) {
-  $title = if ($relDir) { ($relDir -replace "\\"," / ") } else { "Inicio" }
+  $title = if ($relDir -and $relDir -ne ".") { ($relDir -replace "\\"," / ") } else { "Inicio" }
 
   $items = Get-ChildItem -LiteralPath $dirPath -File |
     Where-Object { $_.Name -ne "index.html" -and $AllowedExt -contains $_.Extension.ToLower() } |
@@ -60,7 +35,7 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   } else {
     foreach ($f in $items) {
       $href = Build-Url $relDir $f.Name
-      $safeName = HtmlEncode $f.Name
+      $safeName = [System.Web.HttpUtility]::HtmlEncode($f.Name)
       $listHtml += "<li><a href='$href' target='_blank' rel='noopener'>$safeName</a></li>`n"
     }
   }
@@ -97,14 +72,12 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   Set-Content -LiteralPath $outFile -Value $html -Encoding UTF8
 }
 
-# Index en raíz
 Write-Index $RepoRoot ""
 
-# Index en cada carpeta
 Get-ChildItem -LiteralPath $RepoRoot -Directory -Recurse -Force |
   Where-Object { $SkipDirs -notcontains $_.Name } |
   ForEach-Object {
-    $rel = Get-RelPath $RepoRoot $_.FullName
+    $rel = [System.IO.Path]::GetRelativePath($RepoRoot, $_.FullName)
     Write-Index $_.FullName $rel
   }
 
