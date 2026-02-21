@@ -2,7 +2,7 @@ param(
   [string]$RepoRoot = (Get-Location).Path
 )
 
-$AllowedExt = @(".html",".pdf",".pptx",".docx",".xlsx",".txt")
+$AllowedExt = @(".pdf",".html",".docx",".pptx")
 $SkipDirs   = @(".git",".github","node_modules")
 
 $BaseUrlFile = Join-Path $RepoRoot "baseurl.txt"
@@ -93,24 +93,9 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   }
 
   # Archivos
-  # Orden personalizado por extensión
-  $extOrder = @{
-    ".html" = 1
-    ".pdf"  = 2
-    ".pptx" = 3
-    ".docx" = 4
-    ".xlsx" = 5
-    ".txt"  = 6
-}
-
   $files = Get-ChildItem -LiteralPath $dirPath -File |
-    Where-Object {
-      $_.Name -ne "index.html" -and
-      $AllowedExt -contains $_.Extension.ToLower()
-  } |
-  Sort-Object `
-    @{Expression = { $extOrder[$_.Extension.ToLower()] }}, `
-    @{Expression = { $_.Name }}
+    Where-Object { $_.Name -ne "index.html" -and $AllowedExt -contains $_.Extension.ToLower() } |
+    Sort-Object Name
 
   $fileItems = @()
   foreach ($f in $files) {
