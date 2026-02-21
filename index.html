@@ -10,53 +10,33 @@
     .uplink{margin-bottom:10px;}
     h1{font-size:22px;margin:10px 0 10px 0;}
     a{text-decoration:none;} a:hover{text-decoration:underline;}
-    .tools{display:flex;gap:10px;align-items:center;margin:10px 0 14px 0;flex-wrap:wrap;}
-    .search{padding:8px 10px;border:1px solid #ccc;border-radius:8px;min-width:260px;}
-    .hint{color:#666;font-size:13px;}
     ul{line-height:1.7;padding-left:18px;}
     ul.list{padding-left:18px;margin-top:6px;}
     li.section{margin:10px 0;}
-    li.item{margin:4px 0;}
+    li.item{margin:5px 0;}
     .badge{display:inline-block;font-size:11px;line-height:1;border-radius:6px;padding:4px 6px;margin-right:8px;border:1px solid #ddd;background:#f6f6f6;color:#333;min-width:44px;text-align:center;}
-    .b-dir{background:#eef2ff;border-color:#d9ddff;}
     .b-html{background:#ecfeff;border-color:#cdeef2;}
     .b-pdf{background:#fff7ed;border-color:#f2dfc8;}
     .b-pptx{background:#fef2f2;border-color:#f3caca;}
     .b-docx{background:#eff6ff;border-color:#cfe0ff;}
     .b-xlsx{background:#ecfdf5;border-color:#c9f0dc;}
     .b-txt{background:#f5f5f5;border-color:#e1e1e1;}
+    .b-oth{background:#f5f5f5;border-color:#e1e1e1;}
+    .b-folder{background:#eef2ff;border-color:#d9ddff;color:#1f2a6d;min-width:64px;font-weight:700;}
+    .tri{display:inline-block;margin-right:8px;color:#1f2a6d;font-weight:700;}
+    .dir a.dirlink{font-size:16px;}
   </style>
 </head>
 <body>
   <div class='breadcrumb'><a href='https://lfpeyro-archivos.github.io/hist-eso/'>Inicio</a></div>
   <h1>Inicio</h1>
-  <div class='tools'>
-    <input id='q' class='search' type='search' placeholder='Buscar archivo o carpeta...' autocomplete='off' />
-    <span class='hint'>Escribe para filtrar. Vaciar para ver todo.</span>
-  </div>
   <ul>
 <li class='section'><strong>Carpetas</strong><ul class='list'>
-<li class='item dir' data-name='cursos-bellaguarda'><span class='badge b-dir'>DIR</span> <a href='./cursos-bellaguarda/'>cursos-bellaguarda</a></li>
+<li class='item dir'><span class='badge b-folder'>FOLDER</span><span class='tri' aria-hidden='true'>â–¸</span> <a class='dirlink' href='./cursos-bellaguarda/'><strong>cursos-bellaguarda</strong></a></li>
 </ul></li>
 <li class='section'><strong>Archivos</strong><ul class='list'>
-<li class='item file' data-name='baseurl.txt'><span class='badge b-txt'>TXT</span> <a href='https://lfpeyro-archivos.github.io/hist-eso/baseurl.txt' target='_blank' rel='noopener'>baseurl.txt</a></li>
+<li class='item file'><span class='badge b-txt'>TXT</span> <a href='https://lfpeyro-archivos.github.io/hist-eso/baseurl.txt' target='_blank' rel='noopener'>baseurl.txt</a></li>
 </ul></li>
   </ul>
-  <script>
-    (function(){
-      var input = document.getElementById('q');
-      if(!input) return;
-      var items = Array.prototype.slice.call(document.querySelectorAll('li.item'));
-      function norm(s){ return (s||'').toLowerCase().trim(); }
-      function apply(){
-        var q = norm(input.value);
-        items.forEach(function(li){
-          var name = decodeURIComponent(li.getAttribute('data-name') || '');
-          li.style.display = (q==='' || name.indexOf(q)>=0) ? '' : 'none';
-        });
-      }
-      input.addEventListener('input', apply);
-    })();
-  </script>
 </body>
 </html>

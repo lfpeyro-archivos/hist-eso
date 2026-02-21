@@ -102,9 +102,7 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   $breadcrumbHtml = Build-Breadcrumb $relDir
   $upLinkHtml     = Build-UpLink $relDir
 
-  # -----------------------------
   # Subcarpetas
-  # -----------------------------
   $dirs = Get-ChildItem -LiteralPath $dirPath -Directory |
     Where-Object { $SkipDirs -notcontains $_.Name } |
     Sort-Object Name
@@ -113,12 +111,11 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   foreach ($d in $dirs) {
     $safe = HtmlEncode $d.Name
     $href = "./$([System.Uri]::EscapeDataString($d.Name))/"
-    $dirItems += "<li class='item dir'><span class='badge b-folder'>FOLDER</span><span class='tri' aria-hidden='true'>▸</span> <a class='dirlink' href='$href'><strong>$safe</strong></a></li>"
+    # data-name ayuda al buscador
+    $dirItems += "<li class='item dir' data-name='$([System.Uri]::EscapeDataString($d.Name.ToLower()))'><span class='badge b-dir'>DIR</span> <a href='$href'>$safe</a></li>"
   }
 
-  # -----------------------------
   # Archivos (orden por tipo y luego nombre)
-  # -----------------------------
   $files = Get-ChildItem -LiteralPath $dirPath -File |
     Where-Object {
       $_.Name -ne "index.html" -and
@@ -134,12 +131,10 @@ function Write-Index([string]$dirPath, [string]$relDir) {
     $safeName = HtmlEncode $f.Name
     $href = Build-Url $relDir $f.Name
     $badge = Ext-Badge $ext
-    $fileItems += "<li class='item file'>$badge <a href='$href' target='_blank' rel='noopener'>$safeName</a></li>"
+    $fileItems += "<li class='item file' data-name='$([System.Uri]::EscapeDataString($f.Name.ToLower()))'>$badge <a href='$href' target='_blank' rel='noopener'>$safeName</a></li>"
   }
 
-  # -----------------------------
   # Secciones
-  # -----------------------------
   $sections = @()
   if (($dirItems.Count -eq 0) -and ($fileItems.Count -eq 0)) {
     $sections += "<li><em>(Sin carpetas ni archivos)</em></li>"
@@ -156,9 +151,7 @@ function Write-Index([string]$dirPath, [string]$relDir) {
     }
   }
 
-  # -----------------------------
   # HTML
-  # -----------------------------
   $htmlLines = @()
   $htmlLines += "<!doctype html>"
   $htmlLines += "<html lang='es'>"
@@ -172,37 +165,60 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   $htmlLines += "    .uplink{margin-bottom:10px;}"
   $htmlLines += "    h1{font-size:22px;margin:10px 0 10px 0;}"
   $htmlLines += "    a{text-decoration:none;} a:hover{text-decoration:underline;}"
+  $htmlLines += "    .tools{display:flex;gap:10px;align-items:center;margin:10px 0 14px 0;flex-wrap:wrap;}"
+  $htmlLines += "    .search{padding:8px 10px;border:1px solid #ccc;border-radius:8px;min-width:260px;}"
+  $htmlLines += "    .hint{color:#666;font-size:13px;}"
   $htmlLines += "    ul{line-height:1.7;padding-left:18px;}"
   $htmlLines += "    ul.list{padding-left:18px;margin-top:6px;}"
   $htmlLines += "    li.section{margin:10px 0;}"
-  $htmlLines += "    li.item{margin:5px 0;}"
+  $htmlLines += "    li.item{margin:4px 0;}"
   $htmlLines += "    .badge{display:inline-block;font-size:11px;line-height:1;border-radius:6px;padding:4px 6px;margin-right:8px;border:1px solid #ddd;background:#f6f6f6;color:#333;min-width:44px;text-align:center;}"
+  $htmlLines += "    .b-dir{background:#eef2ff;border-color:#d9ddff;}"
   $htmlLines += "    .b-html{background:#ecfeff;border-color:#cdeef2;}"
   $htmlLines += "    .b-pdf{background:#fff7ed;border-color:#f2dfc8;}"
   $htmlLines += "    .b-pptx{background:#fef2f2;border-color:#f3caca;}"
   $htmlLines += "    .b-docx{background:#eff6ff;border-color:#cfe0ff;}"
   $htmlLines += "    .b-xlsx{background:#ecfdf5;border-color:#c9f0dc;}"
   $htmlLines += "    .b-txt{background:#f5f5f5;border-color:#e1e1e1;}"
-  $htmlLines += "    .b-oth{background:#f5f5f5;border-color:#e1e1e1;}"
-  $htmlLines += "    .b-folder{background:#eef2ff;border-color:#d9ddff;color:#1f2a6d;min-width:64px;font-weight:700;}"
-  $htmlLines += "    .tri{display:inline-block;margin-right:8px;color:#1f2a6d;font-weight:700;}"
-  $htmlLines += "    .dir a.dirlink{font-size:16px;}"
   $htmlLines += "  </style>"
   $htmlLines += "</head>"
   $htmlLines += "<body>"
   $htmlLines += "  <div class='breadcrumb'>$breadcrumbHtml</div>"
   if (-not [string]::IsNullOrWhiteSpace($upLinkHtml)) { $htmlLines += "  $upLinkHtml" }
   $htmlLines += "  <h1>$title</h1>"
+  $htmlLines += "  <div class='tools'>"
+  $htmlLines += "    <input id='q' class='search' type='search' placeholder='Buscar archivo o carpeta...' autocomplete='off' />"
+  $htmlLines += "    <span class='hint'>Escribe para filtrar. Vaciar para ver todo.</span>"
+  $htmlLines += "  </div>"
   $htmlLines += "  <ul>"
   $htmlLines += $sections
   $htmlLines += "  </ul>"
+
+  # Mini buscador (JS)
+  $htmlLines += "  <script>"
+  $htmlLines += "    (function(){"
+  $htmlLines += "      var input = document.getElementById('q');"
+  $htmlLines += "      if(!input) return;"
+  $htmlLines += "      var items = Array.prototype.slice.call(document.querySelectorAll('li.item'));"
+  $htmlLines += "      function norm(s){ return (s||'').toLowerCase().trim(); }"
+  $htmlLines += "      function apply(){"
+  $htmlLines += "        var q = norm(input.value);"
+  $htmlLines += "        items.forEach(function(li){"
+  $htmlLines += "          var name = decodeURIComponent(li.getAttribute('data-name') || '');"
+  $htmlLines += "          li.style.display = (q==='' || name.indexOf(q)>=0) ? '' : 'none';"
+  $htmlLines += "        });"
+  $htmlLines += "      }"
+  $htmlLines += "      input.addEventListener('input', apply);"
+  $htmlLines += "    })();"
+  $htmlLines += "  </script>"
+
   $htmlLines += "</body>"
   $htmlLines += "</html>"
 
   $html = ($htmlLines -join "`n")
   $outFile = Join-Path $dirPath "index.html"
 
-  # Escribir en UTF-8 sin BOM
+  # Escribir tal cual en UTF-8 sin BOM (y sin CRLF forzado)
   [System.IO.File]::WriteAllText($outFile, $html, (New-Object System.Text.UTF8Encoding($false)))
 }
 
