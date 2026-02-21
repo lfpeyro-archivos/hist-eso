@@ -27,29 +27,31 @@ function Build-Url([string]$relDir, [string]$fileName) {
   if ([string]::IsNullOrWhiteSpace($relDir)) {
     return "$BaseUrl/$(Escape-Segment $fileName)"
   }
+
   $segments = $relDir.Split("/") | ForEach-Object { Escape-Segment $_ }
   $escapedDir = ($segments -join "/")
   return "$BaseUrl/$escapedDir/$(Escape-Segment $fileName)"
 }
 
-function Build-Breadcrumb([string]$relDir) {
+function Build-DirUrlFromSegments([string[]]$segments) {
+  if ($segments.Count -eq 0) { return "$BaseUrl/" }
+  $escaped = $segments | ForEach-Object { Escape-Segment $_ }
+  return "$BaseUrl/$($escaped -join '/')/"
+}
 
+function Build-Breadcrumb([string]$relDir) {
   $crumbs = @()
   $crumbs += "<a href='$BaseUrl/'>Inicio</a>"
 
+  $relDir = ($relDir -replace "\\","/").Trim("/")
   if (-not [string]::IsNullOrWhiteSpace($relDir)) {
-    $parts = ($relDir -replace "\\","/").Split("/")
-    $pathAcc = ""
+    $parts = $relDir.Split("/")
+    $acc = New-Object System.Collections.Generic.List[string]
 
     foreach ($p in $parts) {
-      if ([string]::IsNullOrWhiteSpace($pathAcc)) {
-        $pathAcc = $p
-      } else {
-        $pathAcc = "$pathAcc/$p"
-      }
-
+      $acc.Add($p)
       $safe = HtmlEncode $p
-      $url  = "$BaseUrl/$([System.Uri]::EscapeDataString($pathAcc))/"
+      $url  = Build-DirUrlFromSegments $acc.ToArray()
       $crumbs += "<a href='$url'>$safe</a>"
     }
   }
@@ -57,26 +59,28 @@ function Build-Breadcrumb([string]$relDir) {
   return ($crumbs -join " &gt; ")
 }
 
+function Build-UpLink([string]$relDir) {
+  $relDir = ($relDir -replace "\\","/").Trim("/")
+  if ([string]::IsNullOrWhiteSpace($relDir)) { return "" }
+
+  $parts = $relDir.Split("/")
+  if ($parts.Count -le 1) {
+    return "<div style='margin-bottom:10px;'><a href='$BaseUrl/'>Subir un nivel</a></div>"
+  }
+
+  $parentParts = $parts[0..($parts.Count-2)]
+  $parentUrl = Build-DirUrlFromSegments $parentParts
+  return "<div style='margin-bottom:10px;'><a href='$parentUrl'>Subir un nivel</a></div>"
+}
+
 function Write-Index([string]$dirPath, [string]$relDir) {
 
   $title = if ($relDir) { ($relDir -replace "\\"," / ") } else { "Inicio" }
 
-  # Breadcrumb
   $breadcrumbHtml = Build-Breadcrumb $relDir
+  $upLinkHtml     = Build-UpLink $relDir
 
-  # Link subir nivel
-  $upLink = ""
-  if (-not [string]::IsNullOrWhiteSpace($relDir)) {
-    $parent = Split-Path $relDir
-    if ([string]::IsNullOrWhiteSpace($parent)) {
-      $upLink = "<div><a href='$BaseUrl/'>Subir un nivel</a></div>"
-    } else {
-      $parentUrl = "$BaseUrl/$([System.Uri]::EscapeDataString(($parent -replace '\\','/')))/"
-      $upLink = "<div><a href='$parentUrl'>Subir un nivel</a></div>"
-    }
-  }
-
-  # Subcarpetas
+  # Subcarpetas (links relativos funcionan genial en Pages)
   $dirs = Get-ChildItem -LiteralPath $dirPath -Directory |
     Where-Object { $SkipDirs -notcontains $_.Name } |
     Sort-Object Name
@@ -102,7 +106,7 @@ function Write-Index([string]$dirPath, [string]$relDir) {
 
   $contentLines = @()
   if (($dirItems.Count -eq 0) -and ($fileItems.Count -eq 0)) {
-    $contentLines += "<li><em>(Sin archivos)</em></li>"
+    $contentLines += "<li><em>(Sin carpetas ni archivos)</em></li>"
   } else {
     if ($dirItems.Count -gt 0) {
       $contentLines += "<li><strong>Carpetas</strong>"
@@ -129,15 +133,15 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   $htmlLines += "  <title>$title</title>"
   $htmlLines += "  <style>"
   $htmlLines += "    body{font-family:system-ui,Segoe UI,Arial;max-width:980px;margin:24px auto;padding:0 12px;}"
-  $htmlLines += "    h1{font-size:22px;margin-bottom:8px;}"
-  $htmlLines += "    .breadcrumb{font-size:14px;margin-bottom:12px;color:#555;}"
+  $htmlLines += "    h1{font-size:22px;margin:10px 0 12px 0;}"
+  $htmlLines += "    .breadcrumb{font-size:14px;margin-bottom:10px;color:#555;}"
   $htmlLines += "    ul{line-height:1.7;padding-left:18px;}"
   $htmlLines += "    a{text-decoration:none;} a:hover{text-decoration:underline;}"
   $htmlLines += "  </style>"
   $htmlLines += "</head>"
   $htmlLines += "<body>"
   $htmlLines += "  <div class='breadcrumb'>$breadcrumbHtml</div>"
-  $htmlLines += "  $upLink"
+  if (-not [string]::IsNullOrWhiteSpace($upLinkHtml)) { $htmlLines += "  $upLinkHtml" }
   $htmlLines += "  <h1>$title</h1>"
   $htmlLines += "  <ul>"
   $htmlLines += $contentLines
@@ -146,15 +150,16 @@ function Write-Index([string]$dirPath, [string]$relDir) {
   $htmlLines += "</html>"
 
   $html = ($htmlLines -join "`n")
-
   $outFile = Join-Path $dirPath "index.html"
+
+  # Escribir tal cual en UTF-8 sin BOM
   [System.IO.File]::WriteAllText($outFile, $html, (New-Object System.Text.UTF8Encoding($false)))
 }
 
-# Generar index raíz
+# Raiz
 Write-Index $RepoRoot ""
 
-# Generar subcarpetas
+# Todas las carpetas
 Get-ChildItem -LiteralPath $RepoRoot -Directory -Recurse -Force |
   Where-Object { $SkipDirs -notcontains $_.Name } |
   ForEach-Object {
