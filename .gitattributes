@@ -1,0 +1,11 @@
+# HTML y scripts: siempre LF (ideal para web)
+*.html text eol=lf
+*.ps1  text eol=lf
+
+# Batch Windows: CRLF
+*.bat  text eol=crlf
+
+# PDFs binarios
+*.pdf  binary
+*.docx binary
+*.pptx binary
