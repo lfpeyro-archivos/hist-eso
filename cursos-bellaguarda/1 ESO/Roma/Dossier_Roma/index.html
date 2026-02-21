@@ -6,24 +6,57 @@
   <title>cursos-bellaguarda / 1 ESO / Roma / Dossier_Roma</title>
   <style>
     body{font-family:system-ui,Segoe UI,Arial;max-width:980px;margin:24px auto;padding:0 12px;}
-    h1{font-size:22px;margin:10px 0 12px 0;}
     .breadcrumb{font-size:14px;margin-bottom:10px;color:#555;}
-    ul{line-height:1.7;padding-left:18px;}
+    .uplink{margin-bottom:10px;}
+    h1{font-size:22px;margin:10px 0 10px 0;}
     a{text-decoration:none;} a:hover{text-decoration:underline;}
+    .tools{display:flex;gap:10px;align-items:center;margin:10px 0 14px 0;flex-wrap:wrap;}
+    .search{padding:8px 10px;border:1px solid #ccc;border-radius:8px;min-width:260px;}
+    .hint{color:#666;font-size:13px;}
+    ul{line-height:1.7;padding-left:18px;}
+    ul.list{padding-left:18px;margin-top:6px;}
+    li.section{margin:10px 0;}
+    li.item{margin:4px 0;}
+    .badge{display:inline-block;font-size:11px;line-height:1;border-radius:6px;padding:4px 6px;margin-right:8px;border:1px solid #ddd;background:#f6f6f6;color:#333;min-width:44px;text-align:center;}
+    .b-dir{background:#eef2ff;border-color:#d9ddff;}
+    .b-html{background:#ecfeff;border-color:#cdeef2;}
+    .b-pdf{background:#fff7ed;border-color:#f2dfc8;}
+    .b-pptx{background:#fef2f2;border-color:#f3caca;}
+    .b-docx{background:#eff6ff;border-color:#cfe0ff;}
+    .b-xlsx{background:#ecfdf5;border-color:#c9f0dc;}
+    .b-txt{background:#f5f5f5;border-color:#e1e1e1;}
   </style>
 </head>
 <body>
   <div class='breadcrumb'><a href='https://lfpeyro-archivos.github.io/hist-eso/'>Inicio</a> &gt; <a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/'>cursos-bellaguarda</a> &gt; <a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/'>1 ESO</a> &gt; <a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/Roma/'>Roma</a> &gt; <a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/Roma/Dossier_Roma/'>Dossier_Roma</a></div>
-  <div style='margin-bottom:10px;'><a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/Roma/'>Subir un nivel</a></div>
+  <div class='uplink'><a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/Roma/'>Subir un nivel</a></div>
   <h1>cursos-bellaguarda / 1 ESO / Roma / Dossier_Roma</h1>
+  <div class='tools'>
+    <input id='q' class='search' type='search' placeholder='Buscar archivo o carpeta...' autocomplete='off' />
+    <span class='hint'>Escribe para filtrar. Vaciar para ver todo.</span>
+  </div>
   <ul>
-<li><strong>Archivos</strong>
-  <ul>
-<li>[FILE] <a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/Roma/Dossier_Roma/Dossier%20Roma%20ENGLISH.pdf' target='_blank' rel='noopener'>Dossier Roma ENGLISH.pdf</a></li>
-<li>[FILE] <a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/Roma/Dossier_Roma/Dossier%20Roma%20ESPA%C3%91OL.pdf' target='_blank' rel='noopener'>Dossier Roma ESPA&#209;OL.pdf</a></li>
-<li>[FILE] <a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/Roma/Dossier_Roma/Dossier%20Roma%20VALENCIA.pdf' target='_blank' rel='noopener'>Dossier Roma VALENCIA.pdf</a></li>
+<li class='section'><strong>Archivos</strong><ul class='list'>
+<li class='item file' data-name='dossier%20roma%20english.pdf'><span class='badge b-pdf'>PDF</span> <a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/Roma/Dossier_Roma/Dossier%20Roma%20ENGLISH.pdf' target='_blank' rel='noopener'>Dossier Roma ENGLISH.pdf</a></li>
+<li class='item file' data-name='dossier%20roma%20espa%C3%B1ol.pdf'><span class='badge b-pdf'>PDF</span> <a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/Roma/Dossier_Roma/Dossier%20Roma%20ESPA%C3%91OL.pdf' target='_blank' rel='noopener'>Dossier Roma ESPA&#209;OL.pdf</a></li>
+<li class='item file' data-name='dossier%20roma%20valencia.pdf'><span class='badge b-pdf'>PDF</span> <a href='https://lfpeyro-archivos.github.io/hist-eso/cursos-bellaguarda/1%20ESO/Roma/Dossier_Roma/Dossier%20Roma%20VALENCIA.pdf' target='_blank' rel='noopener'>Dossier Roma VALENCIA.pdf</a></li>
+</ul></li>
   </ul>
-</li>
-  </ul>
+  <script>
+    (function(){
+      var input = document.getElementById('q');
+      if(!input) return;
+      var items = Array.prototype.slice.call(document.querySelectorAll('li.item'));
+      function norm(s){ return (s||'').toLowerCase().trim(); }
+      function apply(){
+        var q = norm(input.value);
+        items.forEach(function(li){
+          var name = decodeURIComponent(li.getAttribute('data-name') || '');
+          li.style.display = (q==='' || name.indexOf(q)>=0) ? '' : 'none';
+        });
+      }
+      input.addEventListener('input', apply);
+    })();
+  </script>
 </body>
 </html>
