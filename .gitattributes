@@ -1,6 +1,6 @@
 # HTML y scripts: siempre LF (ideal para web)
 *.html text eol=lf
-*.ps1  text eol=lf
+*.ps1  text eol=crlf
 
 # Batch Windows: CRLF
 *.bat  text eol=crlf
