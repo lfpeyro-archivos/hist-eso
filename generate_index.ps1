@@ -110,8 +110,9 @@ function Write-Index([string]$dirPath, [string]$relDir) {
     $old = Get-Content -LiteralPath $outFile -Raw
     if ($old -eq $html) { return }
   }
-  $html = $html -replace "`r`n", "`n"
-  Set-Content -LiteralPath $outFile -Value $html -Encoding UTF8
+  # Forzar LF real y escribir sin que PowerShell meta CRLF
+  $htmlLf = $html -replace "`r`n", "`n"
+  [System.IO.File]::WriteAllText($outFile, $htmlLf, (New-Object System.Text.UTF8Encoding($false)))
 }
 
 Write-Index $RepoRoot ""
